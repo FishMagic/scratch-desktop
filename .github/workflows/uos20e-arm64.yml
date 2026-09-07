@@ -1,0 +1,112 @@
+name: UOS20E ARM64 Linux
+
+on:
+  push:
+    branches:
+      - develop
+      - 'feat/**'
+  workflow_dispatch:
+    inputs:
+      runner:
+        description: 'ARM64 runner label; override with a larger self-hosted runner when needed'
+        required: false
+        default: ubuntu-24.04-arm
+        type: string
+
+concurrency:
+  group: scratch-desktop-uos20e-arm64-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Scratch Desktop on UOS20E arm64
+    runs-on: ${{ inputs.runner || vars.UOS_ARM_RUNNER || 'ubuntu-24.04-arm' }}
+    timeout-minutes: 180
+    permissions:
+      contents: read
+    env:
+      # This is the central Debian buster arm64 baseline published by
+      # FishMagic/uos20-arm-oci for the UOS20E ABI.
+      UOS_IMAGE: ghcr.io/fishmagic/uos20e-arm64:central-buster
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version-file: .nvmrc
+
+      - name: Locate Node.js toolchain
+        id: node
+        shell: bash
+        run: |
+          set -euo pipefail
+          NODE_ROOT="$(dirname "$(dirname "$(readlink -f "$(command -v node)")")")"
+          echo "root=$NODE_ROOT" >> "$GITHUB_OUTPUT"
+          test "$(node -p 'process.arch')" = arm64
+          test -x "$NODE_ROOT/bin/node"
+          test -x "$NODE_ROOT/bin/npm"
+
+      - name: Cache UOS20E build downloads
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
+        with:
+          path: |
+            .cache/npm
+            .cache/electron
+            .cache/electron-builder
+            static/fetched
+          key: uos20e-arm64-${{ hashFiles('package-lock.json') }}
+
+      - name: Verify native ARM runner and pull build container
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(uname -m)" = aarch64
+          docker info
+          docker pull "$UOS_IMAGE"
+          test "$(docker image inspect "$UOS_IMAGE" --format '{{.Architecture}}')" = arm64
+          df -h
+
+      - name: Build ARM64 packages inside UOS20E container
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/.home"
+          docker run --rm --platform linux/arm64 \
+            --volume "$GITHUB_WORKSPACE:/work:rw" \
+            --volume "${{ steps.node.outputs.root }}:/opt/node:ro" \
+            --env GITHUB_WORKSPACE=/work \
+            --env HOME=/work/.home \
+            --env PATH=/opt/node/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+            --env npm_config_cache=/work/.cache/npm \
+            --env ELECTRON_CACHE=/work/.cache/electron \
+            --env ELECTRON_BUILDER_CACHE=/work/.cache/electron-builder \
+            --env NODE_OPTIONS=--max-old-space-size=4096 \
+            --env CI=true \
+            "$UOS_IMAGE" /work/scripts/build-uos20e-arm64.sh
+
+      - name: Upload UOS20E ARM64 AppImage
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: Scratch-UOS20E-arm64-AppImage-${{ github.sha }}
+          if-no-files-found: error
+          compression-level: 0
+          path: dist/*.AppImage
+
+      - name: Upload UOS20E ARM64 tar.gz
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: Scratch-UOS20E-arm64-tar-gz-${{ github.sha }}
+          if-no-files-found: error
+          compression-level: 0
+          path: dist/*.tar.gz
+
+      - name: Upload UOS20E ARM64 checksums
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: Scratch-UOS20E-arm64-checksums-${{ github.sha }}
+          if-no-files-found: error
+          compression-level: 0
+          path: dist/SHA256SUMS

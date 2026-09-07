@@ -3,7 +3,7 @@
  * Running this script with no command line parameters should build all targets for the current platform.
  * Pass `--target=<short-name>` to build exactly one target instead of the platform default set; the matrix in
  * `release-candidate.yml` uses this to fan a multi-target serial pass out into one runner per target. Valid short
- * names: `mas`, `mas-dev`, `dmg`, `appx`, `nsis`, `msi`, `installers`, `nsis-x64`.
+ * names: `mas`, `mas-dev`, `dmg`, `appx`, `nsis`, `msi`, `installers`, `nsis-x64`, `linux`, `linux-arm64`.
  * This calls electron-builder's documented programmatic API (`build()`) directly instead of spawning the CLI, so
  * build options are passed as a structured object — there is no shell and no argument quoting to get wrong. The
  * `config` object is deep-merged over `electron-builder.yaml`; it only adds overrides, never replaces the file.
@@ -245,8 +245,15 @@ const calculateTargets = function (wrapperConfig) {
             targets: ['nsis:x64'],
             platform: 'win32'
         },
-        linuxAppImage: {
-            targets: ['appimage'],
+        linuxPackages: {
+            // Keep the default Linux build native to the current runner.
+            targets: ['appimage', 'tar.gz'],
+            platform: 'linux'
+        },
+        linuxArm64: {
+            // The UOS20E workflow runs on a native ARM runner, but pin the target
+            // architecture so a misconfigured runner cannot publish an x64 build.
+            targets: ['appimage:arm64', 'tar.gz:arm64'],
             platform: 'linux'
         }
     };
@@ -265,7 +272,9 @@ const calculateTargets = function (wrapperConfig) {
             'nsis': availableTargets.windowsDirectDownload,
             'msi': availableTargets.windowsManagedDeployment,
             'installers': availableTargets.windowsInstallers,
-            'nsis-x64': availableTargets.windowsNsisX64
+            'nsis-x64': availableTargets.windowsNsisX64,
+            'linux': availableTargets.linuxPackages,
+            'linux-arm64': availableTargets.linuxArm64
         };
         const selected = targetsByShortName[wrapperConfig.target];
         if (!selected) {
@@ -319,7 +328,7 @@ const calculateTargets = function (wrapperConfig) {
         targets.push(availableTargets.macDirectDownload);
         break;
     case 'linux':
-        targets.push(availableTargets.linuxAppImage);
+        targets.push(availableTargets.linuxPackages);
         break;
     default:
         throw new Error(`Could not determine targets for platform: ${process.platform}`);

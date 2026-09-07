@@ -62,6 +62,17 @@ other changes which might affect the media libraries.
 
 Note that on macOS this will require installing various certificates.
 
+#### UOS20E ARM64 Linux artifacts
+
+The [`UOS20E ARM64 Linux`](.github/workflows/uos20e-arm64.yml) workflow runs the build on a native ARM64 runner
+inside `ghcr.io/fishmagic/uos20e-arm64:central-buster`, the UOS20E build environment from
+[`FishMagic/uos20-arm-oci`](https://github.com/FishMagic/uos20-arm-oci). It uploads separate `AppImage` and `tar.gz`
+artifacts. On an ARM64 Linux environment, the equivalent local build target is:
+
+```sh
+npm run distDev -- --target=linux-arm64
+```
+
 #### Code signing (Windows)
 
 For an unsigned local build, use `npm run distDev` (it needs no signing configuration). `npm run dist` is the

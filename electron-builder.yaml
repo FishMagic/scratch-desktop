@@ -77,8 +77,11 @@ msi:
   # working in filename fields, not config fields like this one).
   artifactName: "Scratch ${version} ${arch}.${ext}"
 linux:
-  target: AppImage
+  target:
+    - AppImage
+    - tar.gz
   executableName: scratch-desktop
+  artifactName: "Scratch ${version} ${arch}.${ext}"
   # Currently Linux builds are supported only for development and have
   # not been tested in a production environment.
   category: development
