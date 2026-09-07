@@ -40,7 +40,15 @@ if ! ldconfig -p 2>/dev/null | grep -q 'libnspr4.so'; then
         -o APT::Get::AllowUnauthenticated=true
     )
     apt-get update "${APT_OPTIONS[@]}"
-    apt-get install -y --no-install-recommends "${APT_OPTIONS[@]}" libnspr4 libnss3
+    APT_TMP=$(mktemp -d)
+    (
+        cd "$APT_TMP"
+        apt-get download "${APT_OPTIONS[@]}" libnspr4 libnss3
+        for deb in ./*.deb; do
+            dpkg-deb -x "$deb" /
+        done
+    )
+    rm -rf "$APT_TMP"
     ldconfig
 fi
 
