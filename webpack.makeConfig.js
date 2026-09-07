@@ -9,7 +9,14 @@ const merge = require('webpack-merge');
 
 const isProduction = (process.env.NODE_ENV === 'production');
 
-const electronVersion = childProcess.execSync(`${electronPath} --version`, {encoding: 'utf8'}).trim();
+// The UOS20E build container runs as root. Electron only needs to start here to report its
+// version, so disable Chromium's sandbox for this build-time probe without affecting the app.
+const electronArgs = process.getuid && process.getuid() === 0 ? ['--no-sandbox'] : [];
+const electronVersion = childProcess.execFileSync(
+    electronPath,
+    electronArgs.concat('--version'),
+    {encoding: 'utf8'}
+).trim();
 console.log(`Targeting Electron ${electronVersion}`);
 
 const makeConfig = function (defaultConfig, options) {
