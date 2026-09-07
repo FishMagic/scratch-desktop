@@ -28,6 +28,22 @@ mkdir -p "${HOME:-/tmp}" "${npm_config_cache:-.cache/npm}" "${ELECTRON_CACHE:-.c
 
 echo "Building Scratch Desktop with Node $ACTUAL_NODE_VERSION and npm $(npm --version)"
 npm ci --no-audit --no-fund
+
+# Electron's browser binary is used by webpack.makeConfig.js to read the
+# target version. The central UOS20E bootstrap contains the build toolchain
+# but not these two browser runtime libraries.
+if ! ldconfig -p 2>/dev/null | grep -q 'libnspr4.so'; then
+    export DEBIAN_FRONTEND=noninteractive
+    APT_OPTIONS=(
+        -o Acquire::Check-Valid-Until=false
+        -o Acquire::AllowInsecureRepositories=true
+        -o APT::Get::AllowUnauthenticated=true
+    )
+    apt-get update "${APT_OPTIONS[@]}"
+    apt-get install -y --no-install-recommends "${APT_OPTIONS[@]}" libnspr4 libnss3
+    ldconfig
+fi
+
 npm run distDev -- --target=linux-arm64
 
 shopt -s nullglob
