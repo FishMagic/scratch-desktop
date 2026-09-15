@@ -96,6 +96,7 @@ jobs:
             sudo apt-get install -y --no-install-recommends xvfb xauth
           fi
           APP_EXECUTABLE=/work/dist/linux-arm64-unpacked/scratch-desktop
+          ELECTRON_BINARY=/work/node_modules/electron/dist/electron
 
           run_webgl_check() {
             timeout --foreground 300s xvfb-run -a -s '-ac -screen 0 1280x800x24' \
@@ -113,14 +114,14 @@ jobs:
                 --env NODE_OPTIONS=--max-old-space-size=4096 \
                 --env CI=true \
                 "$UOS_IMAGE" \
-                -c 'bash /work/scripts/prepare-uos20e-runtime.sh; exec /work/dist/linux-arm64-unpacked/scratch-desktop --no-sandbox /work/scripts/check-webgl.js "$@"' \
+                -c 'bash /work/scripts/prepare-uos20e-runtime.sh; exec /work/node_modules/electron/dist/electron --no-sandbox /work/scripts/check-webgl.js "$@"' \
                 -- "$@"
           }
 
           docker run --rm --platform linux/arm64 \
             --volume "$GITHUB_WORKSPACE:/work:ro" \
             "$UOS_IMAGE" \
-            -c "file '$APP_EXECUTABLE'"
+            -c "file '$APP_EXECUTABLE' '$ELECTRON_BINARY'"
 
           run_webgl_check
 
