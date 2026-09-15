@@ -115,14 +115,14 @@ jobs:
                 --env NODE_OPTIONS=--max-old-space-size=4096 \
                 --env CI=true \
                 "$UOS_IMAGE" \
-                "$APP_EXECUTABLE" --no-sandbox \
-                /work/scripts/check-webgl.js "$@"
+                -c 'exec /work/dist/linux-arm64-unpacked/scratch-desktop --no-sandbox /work/scripts/check-webgl.js "$@"' \
+                -- "$@"
           }
 
           docker run --rm --platform linux/arm64 \
             --volume "$GITHUB_WORKSPACE:/work:ro" \
             "$UOS_IMAGE" \
-            file "$APP_EXECUTABLE"
+            -c "file '$APP_EXECUTABLE'"
 
           set +e
           run_webgl_check --skip-webgl-fix
