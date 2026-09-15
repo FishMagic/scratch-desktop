@@ -98,8 +98,9 @@ jobs:
           APP_EXECUTABLE=/work/dist/linux-arm64-unpacked/scratch-desktop
 
           run_webgl_check() {
-            xvfb-run -a -s '-ac -screen 0 1280x800x24' \
+            timeout --foreground 300s xvfb-run -a -s '-ac -screen 0 1280x800x24' \
               docker run --rm --platform linux/arm64 \
+                --shm-size=2g \
                 --volume "$GITHUB_WORKSPACE:/work:rw" \
                 --volume "${{ steps.node.outputs.root }}:/opt/node:ro" \
                 --volume /tmp/.X11-unix:/tmp/.X11-unix:rw \
@@ -120,16 +121,6 @@ jobs:
             --volume "$GITHUB_WORKSPACE:/work:ro" \
             "$UOS_IMAGE" \
             -c "file '$APP_EXECUTABLE'"
-
-          set +e
-          run_webgl_check --skip-webgl-fix
-          baseline_status=$?
-          set -e
-          if [ "$baseline_status" -eq 0 ]; then
-            echo 'Baseline WebGL check passed without ARM startup switches.'
-          else
-            echo 'Baseline WebGL check reproduced the unsupported-WebGL condition.'
-          fi
 
           run_webgl_check
 
