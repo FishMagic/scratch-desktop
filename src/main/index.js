@@ -8,6 +8,7 @@ import argv from './argv';
 import {getFilterForExtension} from './FileFilters';
 import telemetry from './ScratchDesktopTelemetry';
 import MacOSMenu from './MacOSMenu';
+import {configureWebgl} from './webgl';
 import log from '../common/log.js';
 import packageJson from '../../package.json';
 
@@ -40,6 +41,11 @@ const PORT = process.env.PORT || 8601;
 // enable connecting to Scratch Link even if we DNS / Internet access is not available
 // this must happen BEFORE the app ready event!
 app.commandLine.appendSwitch('host-resolver-rules', 'MAP device-manager.scratch.mit.edu 127.0.0.1');
+
+// UOS ARM64 machines may have a Chromium-blocklisted or unavailable hardware GL driver.
+// Configure Electron's software WebGL path before the ready event so Scratch GUI's
+// Renderer.isSupported() check sees the same context that the stage will use.
+configureWebgl(app);
 
 const displayPermissionDeniedWarning = (browserWindow, permissionType) => {
     let title;

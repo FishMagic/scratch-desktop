@@ -87,6 +87,49 @@ jobs:
             --env CI=true \
             "$UOS_IMAGE" /work/scripts/build-uos20e-arm64.sh
 
+      - name: Verify WebGL in UOS20E ARM64 runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v xvfb-run >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends xvfb xauth
+          fi
+          XAUTHORITY_FILE="$RUNNER_TEMP/scratch-webgl-xauth"
+
+          run_webgl_check() {
+            xvfb-run -a -f "$XAUTHORITY_FILE" -s '-screen 0 1280x800x24' \
+              docker run --rm --platform linux/arm64 \
+                --volume "$GITHUB_WORKSPACE:/work:rw" \
+                --volume "${{ steps.node.outputs.root }}:/opt/node:ro" \
+                --volume /tmp/.X11-unix:/tmp/.X11-unix:rw \
+                --volume "$XAUTHORITY_FILE:/tmp/scratch-webgl-xauth:ro" \
+                --env HOME=/work/.home \
+                --env PATH=/opt/node/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+                --env DISPLAY \
+                --env XAUTHORITY=/tmp/scratch-webgl-xauth \
+                --env npm_config_cache=/work/.cache/npm \
+                --env ELECTRON_CACHE=/work/.cache/electron \
+                --env ELECTRON_BUILDER_CACHE=/work/.cache/electron-builder \
+                --env NODE_OPTIONS=--max-old-space-size=4096 \
+                --env CI=true \
+                "$UOS_IMAGE" \
+                /work/node_modules/electron/dist/electron --no-sandbox \
+                /work/scripts/check-webgl.js "$@"
+          }
+
+          set +e
+          run_webgl_check --skip-webgl-fix
+          baseline_status=$?
+          set -e
+          if [ "$baseline_status" -eq 0 ]; then
+            echo 'Baseline WebGL check passed without ARM startup switches.'
+          else
+            echo 'Baseline WebGL check reproduced the unsupported-WebGL condition.'
+          fi
+
+          run_webgl_check
+
       - name: Upload UOS20E ARM64 AppImage
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:

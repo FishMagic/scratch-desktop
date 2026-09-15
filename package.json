@@ -22,8 +22,9 @@
     "doBuild": "node ./scripts/electron-builder-wrapper.js",
     "dist": "npm run clean && npm run fetch && npm run build:dist --",
     "distDev": "npm run clean && npm run fetch && npm run build:dev --",
-    "test": "npm run test:lint",
-    "test:lint": "eslint --cache --color ."
+    "test": "npm run test:lint && npm run test:webgl",
+    "test:lint": "eslint --cache --color .",
+    "test:webgl": "node scripts/test-webgl-config.js"
   },
   "repository": {
     "type": "git",
