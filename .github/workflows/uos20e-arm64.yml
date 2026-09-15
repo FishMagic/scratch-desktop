@@ -115,7 +115,7 @@ jobs:
                 --env NODE_OPTIONS=--max-old-space-size=4096 \
                 --env CI=true \
                 "$UOS_IMAGE" \
-                -c 'exec /work/dist/linux-arm64-unpacked/scratch-desktop --no-sandbox /work/scripts/check-webgl.js "$@"' \
+                -c '/work/scripts/prepare-uos20e-runtime.sh; exec /work/dist/linux-arm64-unpacked/scratch-desktop --no-sandbox /work/scripts/check-webgl.js "$@"' \
                 -- "$@"
           }
 
