@@ -31,7 +31,7 @@ npm ci --no-audit --no-fund
 
 # Electron's browser binary and the packaged runtime need Chromium's shared-library
 # dependencies. The central UOS20E bootstrap may omit them from its minimal rootfs.
-"$WORKSPACE/scripts/prepare-uos20e-runtime.sh"
+bash "$WORKSPACE/scripts/prepare-uos20e-runtime.sh"
 
 ELECTRON_BINARY=node_modules/electron/dist/electron
 MISSING_ELECTRON_LIBRARIES=$(ldd "$ELECTRON_BINARY" 2>/dev/null | grep 'not found' || true)
