@@ -96,6 +96,7 @@ jobs:
             sudo apt-get install -y --no-install-recommends xvfb xauth
           fi
           XAUTHORITY_FILE="$RUNNER_TEMP/scratch-webgl-xauth"
+          APP_EXECUTABLE=/work/dist/linux-arm64-unpacked/scratch-desktop
 
           run_webgl_check() {
             xvfb-run -a -f "$XAUTHORITY_FILE" -s '-screen 0 1280x800x24' \
@@ -114,9 +115,14 @@ jobs:
                 --env NODE_OPTIONS=--max-old-space-size=4096 \
                 --env CI=true \
                 "$UOS_IMAGE" \
-                /work/node_modules/electron/dist/electron --no-sandbox \
+                "$APP_EXECUTABLE" --no-sandbox \
                 /work/scripts/check-webgl.js "$@"
           }
+
+          docker run --rm --platform linux/arm64 \
+            --volume "$GITHUB_WORKSPACE:/work:ro" \
+            "$UOS_IMAGE" \
+            file "$APP_EXECUTABLE"
 
           set +e
           run_webgl_check --skip-webgl-fix
