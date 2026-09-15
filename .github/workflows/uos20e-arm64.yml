@@ -50,7 +50,7 @@ jobs:
           test -x "$NODE_ROOT/bin/npm"
 
       - name: Cache UOS20E build downloads
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
+        uses: actions/cache@27d5ce7f107fe9357f9df03ef3ef73ab90386fccae # v5
         with:
           path: |
             .cache/npm
@@ -95,20 +95,17 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y --no-install-recommends xvfb xauth
           fi
-          XAUTHORITY_FILE="$RUNNER_TEMP/scratch-webgl-xauth"
           APP_EXECUTABLE=/work/dist/linux-arm64-unpacked/scratch-desktop
 
           run_webgl_check() {
-            xvfb-run -a -f "$XAUTHORITY_FILE" -s '-screen 0 1280x800x24' \
+            xvfb-run -a -s '-ac -screen 0 1280x800x24' \
               docker run --rm --platform linux/arm64 \
                 --volume "$GITHUB_WORKSPACE:/work:rw" \
                 --volume "${{ steps.node.outputs.root }}:/opt/node:ro" \
                 --volume /tmp/.X11-unix:/tmp/.X11-unix:rw \
-                --volume "$XAUTHORITY_FILE:/tmp/scratch-webgl-xauth:ro" \
                 --env HOME=/work/.home \
                 --env PATH=/opt/node/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
                 --env DISPLAY \
-                --env XAUTHORITY=/tmp/scratch-webgl-xauth \
                 --env npm_config_cache=/work/.cache/npm \
                 --env ELECTRON_CACHE=/work/.cache/electron \
                 --env ELECTRON_BUILDER_CACHE=/work/.cache/electron-builder \
